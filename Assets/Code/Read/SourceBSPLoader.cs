@@ -289,14 +289,27 @@ namespace uSrcTools
 					obj.transform.eulerAngles = angles;
 				}
 
-				if (className == "func_illusionary")
-				{
-					MeshRenderer[] renderers = obj.GetComponentsInChildren<MeshRenderer> ();
-					for (int i = 0; i < renderers.Length; i++)
-					{
-						renderers[i].shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-					}
-				}
+                if (className.StartsWith("func_"))
+                {
+                    if (className == "func_breakable" || className == "func_door" || className == "func_door_rotating"
+                        || className == "func_elevator" || className == "func_movelinear")
+                    {
+                        obj.isStatic = false;
+                        Transform[] transforms = obj.GetComponentsInChildren<Transform>();
+                        for (int i = 0; i < transforms.Length; i++)
+                        {
+                            transforms[i].gameObject.isStatic = false;
+                        }
+                    }
+                    else if (className == "func_illusionary")
+                    {
+                        MeshRenderer[] renderers = obj.GetComponentsInChildren<MeshRenderer>();
+                        for (int i = 0; i < renderers.Length; i++)
+                        {
+                            renderers[i].shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                        }
+                    }
+                }
 
 				return;
 			}
@@ -313,13 +326,12 @@ namespace uSrcTools
 				"light",
 				"info_survivor_position",
 				"env_projectedtexture",
-				"func_illusionary",
-				"prop_button",
+                "prop_button",
 				"prop_floor_button",
 				"prop_weighted_cube"
 			};
 
-			if (testEnts.Contains (className))
+            if (testEnts.Contains (className))
 			{
 				string targetname = null;
 
@@ -390,7 +402,7 @@ namespace uSrcTools
 					}
 				}
 
-				if (!Test.Inst.isL4D2)
+                if (!Test.Inst.isL4D2)
 				{
 					if (className == "info_player_start")
 					{
@@ -441,7 +453,7 @@ namespace uSrcTools
 
 				}
 
-				/*if(className=="prop_floor_button")
+                /*if(className=="prop_floor_button")
 				{
 					string modelname="models/props/button_base_reference.mdl";
 					SourceStudioModel baseModel = ResourceManager.Inst.GetModel(modelName);
@@ -471,7 +483,7 @@ namespace uSrcTools
 						
 					obj.transform.eulerAngles = angles;
 				}*/
-			}
+            }
 		}
 
 		//==================================================================================================
