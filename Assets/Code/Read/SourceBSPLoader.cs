@@ -341,16 +341,19 @@ namespace uSrcTools
 				obj.transform.position = ConvertUtils.StringToVector (data[data.FindIndex (n => n == "origin") + 1]);
 				obj.transform.eulerAngles = angles;
 
-				/*if(className=="light")
+				if(className=="light")
 				{
 					Light l = obj.AddComponent<Light>();
-					l.color = ConvertUtils.stringToColor(data[data.FindIndex (n=>n=="_light")+1],255);
+                    l.type = LightType.Point;
+                    l.color = ConvertUtils.stringToColor(data[data.FindIndex (n=>n=="_light")+1],255);
+                    l.lightmapBakeType = LightmapBakeType.Baked;
 				}
 				if(className=="light_spot")
 				{
 					Light l = obj.AddComponent<Light>();
 					l.type=LightType.Spot;
 					l.color = ConvertUtils.stringToColor(data[data.FindIndex (n=>n=="_light")+1],255);
+                    l.lightmapBakeType = LightmapBakeType.Baked;
 					//float pitch = 0;
 					//if(data.Contains ("pitch"))
 					//	pitch = float.Parse (data[data.FindIndex (n=>n=="pitch")+1]);
@@ -360,8 +363,8 @@ namespace uSrcTools
 					}
 					//angles.y = pitch;
 					angles.y+=90;
-					//obj.transform.eulerAngles = angles; 
-				}*/
+					obj.transform.eulerAngles = angles; 
+				}
 
 				if (className == "light_environment" & Test.Inst.light_environment != null)
 				{
