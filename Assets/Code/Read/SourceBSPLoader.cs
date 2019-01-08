@@ -147,7 +147,7 @@ namespace uSrcTools
 							{
 								if (map.facesLump[i].dispinfo != -1)
 								{
-									GenerateDispFaceObject (i, m);
+									GenerateDispFaceObject (i, m, uSrcSettings.Inst.displacementTextureScaleOverride);
 								}
 							}
 						}
@@ -218,7 +218,7 @@ namespace uSrcTools
 					{
 						for (int i = 0; i < map.dispinfoLump.Length; i++)
 						{
-							GenerateDispFaceObject ((int) map.dispinfoLump[i].MapFace, 0);
+							GenerateDispFaceObject ((int) map.dispinfoLump[i].MapFace, 0, uSrcSettings.Inst.displacementTextureScaleOverride);
 							Debug.Log ("FaceId: " + map.dispinfoLump[i].MapFace + " DispInfoId: " + i +
 								" DispVertStart: " + map.dispinfoLump[i].DispVertStart);
 						}
@@ -228,7 +228,7 @@ namespace uSrcTools
 				case Type.OneFace:
 					if (uSrcSettings.Inst.displacements & map.facesLump[faceId].dispinfo != -1)
 					{
-						GenerateDispFaceObject (faceId, 0);
+						GenerateDispFaceObject (faceId, 0, uSrcSettings.Inst.displacementTextureScaleOverride);
 						Debug.Log ("FaceId: " + faceId + " DispInfoId: " + map.facesLump[faceId].dispinfo +
 							" DispVertStart: " + map.dispinfoLump[map.facesLump[faceId].dispinfo].DispVertStart);
 					}
@@ -810,9 +810,9 @@ namespace uSrcTools
 			return faceObject;
 		}
 
-		void GenerateDispFaceObject (int index, int model)
+		void GenerateDispFaceObject (int index, int model, float overrideTextureScale)
 		{
-			surface f = BuildDispFace (index, model, map.facesLump[index].dispinfo);
+			surface f = BuildDispFace (index, model, map.facesLump[index].dispinfo, overrideTextureScale);
 
 			GameObject faceObject = new GameObject ("DispFace: " + f.index);
 
@@ -968,7 +968,7 @@ namespace uSrcTools
 			return true;
 		}
 
-		surface BuildDispFace (int faceIndex, int model, short dispinfoId)
+		surface BuildDispFace (int faceIndex, int model, short dispinfoId, float overrideTextureScale)
 		{
 			Vector3[] vertices = new Vector3[4];
 			List<Vector3> disp_verts = new List<Vector3> ();
@@ -1042,8 +1042,8 @@ namespace uSrcTools
 			Vector3 flatVertex;
 			Vector3 dispVertex;
 
-			float scaleU = (float) 1f / curTexData.width;
-			float scaleV = (float) 1f / curTexData.height;
+			float scaleU = (float) 1f / (overrideTextureScale > 0 ? overrideTextureScale : curTexData.width);
+			float scaleV = (float) 1f / (overrideTextureScale > 0 ? overrideTextureScale : curTexData.height);
 
 			for (int i = 0; i < numEdgeVertices; i++)
 			{

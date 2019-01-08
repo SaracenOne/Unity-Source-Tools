@@ -28,9 +28,10 @@ namespace uSrcTools
 		public bool entities = true;
 		public bool showTriggers = false;
 		public bool genColliders = false;
+        public float displacementTextureScaleOverride = 0.0f;
 
-		//public Shader sDiffuse;
-		public Material diffuseMaterial;
+        //public Shader sDiffuse;
+        public Material diffuseMaterial;
 		//public Shader sTransparent;
 		public Material transparentMaterial;
 		//public Shader sAlphatest;
