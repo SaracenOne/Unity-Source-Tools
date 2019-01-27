@@ -492,7 +492,7 @@ namespace uSrcTools
 		{
 			int numFaces = map.modelsLump[index].numfaces;
 			int firstFace = map.modelsLump[index].firstface;
-			int numVerts = 0;
+            int numVerts = 0;
 			int numInds = 0;
 
 			GameObject model = new GameObject ("*" + index);
@@ -535,6 +535,7 @@ namespace uSrcTools
 				Debug.Log ("CreateModelObject " + index + " numVerts " + numVerts);
 
 				Vector3[] verts = new Vector3[numVerts];
+                Vector3[] normals = new Vector3[numVerts];
 				Vector2[] UVs = new Vector2[numVerts];
 				Vector2[] UV2s = new Vector2[numVerts];
 				int[] tris = new int[numInds];
@@ -548,7 +549,7 @@ namespace uSrcTools
 					if ((Test.Inst.skipSky && (ti.flags & SourceBSPStructs.SURF_SKY) != 0) || face.dispinfo != -1)
 						continue;
 
-					if (BuildFace (i, ref verts, ref UVs, ref UV2s, ref tris, vertOffs, indsOffs))
+					if (BuildFace (i, ref verts, ref normals, ref UVs, ref UV2s, ref tris, vertOffs, indsOffs))
 					{
 						vertOffs += face.numedges;
 						indsOffs += (face.numedges - 2) * 3;
@@ -582,6 +583,7 @@ namespace uSrcTools
 				mf.sharedMesh = new Mesh ();
 				mf.sharedMesh.name = "BSPModel_" + index;
 				mf.sharedMesh.vertices = verts;
+                mf.sharedMesh.normals = normals;
 				mf.sharedMesh.triangles = tris;
 				mf.sharedMesh.uv = UVs;
 				if (uSrcSettings.Inst.lightmaps && map.hasLightmaps && curLightmap < 255)
@@ -589,8 +591,6 @@ namespace uSrcTools
 					mf.sharedMesh.uv2 = UV2s;
 					mr.lightmapIndex = curLightmap;
 				}
-
-				mf.sharedMesh.RecalculateNormals ();
 
 				if (uSrcSettings.Inst.genColliders)
 				{
@@ -641,7 +641,8 @@ namespace uSrcTools
 					texdata = map.texdataLump[i];
 
 					Vector3[] verts = new Vector3[texdata.numVerts];
-					Vector2[] UVs = new Vector2[texdata.numVerts];
+                    Vector3[] normals = new Vector3[texdata.numVerts];
+                    Vector2[] UVs = new Vector2[texdata.numVerts];
 					Vector2[] UV2s = new Vector2[texdata.numVerts];
 					int[] tris = new int[texdata.numInds];
 
@@ -651,14 +652,14 @@ namespace uSrcTools
 					{
 						face = map.facesLump[materialFaces[i][j]];
 
-						if (!BuildFace (materialFaces[i][j], ref verts, ref UVs, ref UV2s, ref tris, vertOffs, indsOffs))
+						if (!BuildFace (materialFaces[i][j], ref verts, ref normals, ref UVs, ref UV2s, ref tris, vertOffs, indsOffs))
 						{
 							LM_UploadBlock ();
 							LM_InitBlock ();
-							BuildFace (materialFaces[i][j], ref verts, ref UVs, ref UV2s, ref tris, vertOffs, indsOffs);
+							BuildFace (materialFaces[i][j], ref verts, ref normals, ref UVs, ref UV2s, ref tris, vertOffs, indsOffs);
 						}
 						vertOffs += face.numedges;
-						indsOffs += (face.numedges - 2) * 3;
+                        indsOffs += (face.numedges - 2) * 3;
 					}
 
 					string materialName = ConvertUtils.GetNullTerminatedString (map.texdataStringDataLump, map.texdataStringTableLump[texdata.nameStringTableID]);
@@ -675,6 +676,7 @@ namespace uSrcTools
 					Mesh mesh = new Mesh ();
 					mesh.name = materialName;
 					mesh.vertices = verts;
+                    mesh.normals = normals;
 					mesh.uv = UVs;
 					mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided; //Making model shadows two-sided for better quality.
 
@@ -682,7 +684,6 @@ namespace uSrcTools
 						mesh.uv2 = UV2s;
 
 					mesh.triangles = tris;
-					mesh.RecalculateNormals ();
 					mf.sharedMesh = mesh;
 
 					Material mat = ResourceManager.Inst.GetMaterial (materialName);
@@ -896,7 +897,7 @@ namespace uSrcTools
 			return new surface (); //null
 		}
 
-		bool BuildFace (int index, ref Vector3[] verts, ref Vector2[] UVs, ref Vector2[] UV2s, ref int[] tris, int vertOffs, int triOffs)
+		bool BuildFace (int index, ref Vector3[] verts, ref Vector3[] normals, ref Vector2[] UVs, ref Vector2[] UV2s, ref int[] tris, int vertOffs, int triOffs)
 		{
 			bspface curface = map.facesLump[index];
 			int startEdge = curface.firstedge;
@@ -916,11 +917,14 @@ namespace uSrcTools
 					return false;
 				}
 
-			for (int i = 0; i < nEdges; i++)
+            for (int i = 0; i < nEdges; i++)
 			{
-				//verts.Add( map.surfedgesLump[i]>0 ? 
-				verts[vertOffs + i] = (map.vertexesLump[map.edgesLump[Math.Abs (map.surfedgesLump[startEdge + i])][map.surfedgesLump[startEdge + i] > 0 ? 0 : 1]]);
-			}
+                //verts.Add( map.surfedgesLump[i]>0 ? 
+				verts[vertOffs + i] = map.vertexesLump[map.edgesLump[Math.Abs (map.surfedgesLump[startEdge + i])][map.surfedgesLump[startEdge + i] > 0 ? 0 : 1]];
+
+                Vector3 normal = map.vertNormalsLump[map.vertNormalIndicesLump[map.faceNormalPointers[index] + i]];
+                normals[vertOffs + i] = new Vector3(normal.x, normal.z, normal.y);
+            }
 			int j = triOffs;
 			for (int i = 0; i < nEdges - 2; i++)
 			{
