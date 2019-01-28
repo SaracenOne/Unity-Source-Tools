@@ -45,7 +45,7 @@ namespace uSrcTools
 		bool used;
 		public bool loaded=false;
 		public bool drawArmature=false;
-		Material[] TempMats;
+		Material[][] TempMats;
 
 		public SourceStudioModel Load(string ModelName)
 		{
@@ -91,9 +91,9 @@ namespace uSrcTools
 			BuildMeshObject (curModelName, go,false);
 		}*/
 
-		public void GetInstance(GameObject go, bool skinned,int bp)
+		public void GetInstance(GameObject go, bool skinned, int bp, int instanceSkin)
 		{
-			BuildMeshObject (curModelName, go, skinned,bp);
+			BuildMeshObject (curModelName, go, skinned, bp, instanceSkin);
 		}
 
 		public void OnDrawGizmos()
@@ -339,7 +339,7 @@ namespace uSrcTools
 			used = true;
 		}
 
-		void BuildMeshObject(string modelName, GameObject go, bool skinned,int bp)
+		void BuildMeshObject(string modelName, GameObject go, bool skinned, int bp, int instanceSkin)
 		{
 			if (!loaded) 
 			{
@@ -396,7 +396,11 @@ namespace uSrcTools
 				
 				
 				if(TempMats==null)
-					TempMats = new Material[submeshCount];
+                {
+					TempMats = new Material[numSkinRefs][];
+                    for (int i = 0; i < numSkinRefs; i++)
+                        TempMats[i]=new Material[submeshCount];
+                }
 
 				//for(int bpId=0; bpId<vtxBodyParts.Length; bpId++)
 				//{
@@ -416,19 +420,28 @@ namespace uSrcTools
 						vtxMeshHeader vtxMesh=_lod.meshes[meshId];
 						studiomesh mdlMesh=mdlModel.meshes[meshId];
 
-						int materialId=mdlMesh.material+(numSkinRefs*skin);
-						string material=mdlTextures[mdlSkinFamilies[materialId]].textureName;
-						//Debug.Log ("Mesh "+curmeshId+" material is "+material);
+                        for(int skinId=0; skinId<numSkinRefs; skinId++)
+                        {
+                            int skinTableOffset=numSkinRefs*skinId;
+                            int materialId=mdlMesh.material+(skinTableOffset);
 
-						if(TempMats[curmeshId]==null)
-						{
-							string materialName=ResourceManager.FindModelMaterialFile(material,mdlTexturePaths);
+                            short mdlSkinFamily = 0;
+                            if (materialId<mdlSkinFamilies.Count())
+                                mdlSkinFamily=mdlSkinFamilies[materialId];
 
-							if(materialName!=null)
-								TempMats[curmeshId] = ResourceManager.Inst.GetMaterial(materialName);
-							else
-								TempMats[curmeshId] = ResourceManager.Inst.GetMaterial(material);
-						}
+                            string material=mdlTextures[mdlSkinFamily].textureName;
+                            //Debug.Log ("Mesh "+curmeshId+" material is "+material);
+
+                            if (TempMats[skinId][curmeshId]==null)
+                            {
+                                string materialName=ResourceManager.FindModelMaterialFile(material,mdlTexturePaths);
+
+                                if (materialName!=null)
+                                    TempMats[skinId][curmeshId] = ResourceManager.Inst.GetMaterial(materialName);
+                                else
+                                    TempMats[skinId][curmeshId] = ResourceManager.Inst.GetMaterial(material);
+                            }
+                        }
 						
 						for(int stripGroupId=0; stripGroupId<vtxMesh.numStripGroups; stripGroupId++)
 						{
@@ -445,18 +458,18 @@ namespace uSrcTools
 
 								//int indexOffset=stripGroup.indexOffs+strip.indexOffset;
 								//int numIndices=strip.numIndices;
-								int indexOffset=curIndexOffset;
-								int numIndices=stripGroup.numIndices*4;
+							int indexOffset=curIndexOffset;
+							int numIndices=stripGroup.numIndices*4;
 
-								//Debug.Log("Mesh "+curmeshId+" index count is "+numIndices/4+" index offset "+indexOffset/4);
+							//Debug.Log("Mesh "+curmeshId+" index count is "+numIndices/4+" index offset "+indexOffset/4);
 
-								int[] tempIndex = new int[stripGroup.numIndices];
-								System.Buffer.BlockCopy(indexArray,indexOffset,tempIndex,0,numIndices);
-								modelMesh.SetTriangles(tempIndex, curmeshId);
-						if(modelMesh.GetTriangles(curmeshId).Length==0)
-							Debug.LogWarning ("Error with model "+modelName+": setting tris for "+curmeshId+" submesh");
+							int[] tempIndex = new int[stripGroup.numIndices];
+							System.Buffer.BlockCopy(indexArray,indexOffset,tempIndex,0,numIndices);
+							modelMesh.SetTriangles(tempIndex, curmeshId);
+						    if(modelMesh.GetTriangles(curmeshId).Length==0)
+						    	Debug.LogWarning ("Error with model "+modelName+": setting tris for "+curmeshId+" submesh");
 								
-								curmeshId++;
+							curmeshId++;
 							curIndexOffset+=stripGroup.numIndices*4;
 							//}
 						}
@@ -475,8 +488,11 @@ namespace uSrcTools
 			mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided; //Making model shadows two-sided for better quality.
 			
 			modelMesh.RecalculateBounds ();
-			mr.materials = TempMats;
-			mr.lightmapIndex = 255;
+            if (instanceSkin < TempMats.Count() && instanceSkin >= 0)
+                mr.materials = TempMats[instanceSkin];
+            else
+                mr.materials = TempMats[0];
+            mr.lightmapIndex = 255;
 			
 			used = true;
 		}

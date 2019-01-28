@@ -190,7 +190,8 @@ namespace uSrcTools
 							}
 							else
 							{
-								tempModel.GetInstance (go, false, 0);
+                                int skinIndex = prop.Skin;
+                                tempModel.GetInstance (go, false, 0, skinIndex);
 							}
 
 							go.isStatic = true;
@@ -448,7 +449,8 @@ namespace uSrcTools
 					}
 					else
 					{
-						tempModel.GetInstance (obj, true, 0);
+                        int skinIndex = int.Parse(data[data.FindIndex(n => n == "skin") + 1].Substring(1));
+                        tempModel.GetInstance (obj, true, 0, skinIndex);
 					}
 
 				}
