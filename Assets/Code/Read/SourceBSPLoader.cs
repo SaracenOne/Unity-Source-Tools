@@ -449,7 +449,11 @@ namespace uSrcTools
 					}
 					else
 					{
-                        int skinIndex = int.Parse(data[data.FindIndex(n => n == "skin") + 1].Substring(1));
+                        string skinString = data[data.FindIndex(n => n == "skin") + 1].Substring(1);
+                        int skinIndex = 0;
+                        if (int.TryParse(skinString, out skinIndex) == false)
+                            skinIndex = 0;
+
                         tempModel.GetInstance (obj, true, 0, skinIndex);
 					}
 

@@ -61,7 +61,7 @@ namespace uSrcTools
 				GameObject modelObj=new GameObject("TestModel ");
 				model.Load (@"models / "+modelName+".mdl ");
 				//model.GetInstance(modelObj,skinnedModel);
-				model.GetInstance (modelObj,skinnedModel,0);
+				model.GetInstance (modelObj,skinnedModel,0,0);
 				//modelObj.transform.localEulerAngles=new Vector3(270,0,0);
 			}
 		}
