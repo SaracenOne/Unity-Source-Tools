@@ -223,36 +223,48 @@ namespace uSrcTools
 				}
 			}
 			
+            // Primary path
 			path = uSrcSettings.Inst.path + "/" + uSrcSettings.Inst.game + "/";
 			if(CheckFile(path + filename))
 			{
 				return path + filename;
 			}
-			else if(CheckFullFiles(filename))
+			else if(CheckFullFiles(path, filename))
 			{
 				return path + filename;
 			}
-			
-			Debug.LogWarning (uSrcSettings.Inst.path + "/" + uSrcSettings.Inst.game + "/" + filename+": Not Found");
+
+            // Secondary path
+            path = uSrcSettings.Inst.secondaryPath + "/" + uSrcSettings.Inst.game + "/";
+            if (CheckFile(path + filename))
+            {
+                return path + filename;
+            }
+            else if (CheckFullFiles(uSrcSettings.Inst.path, filename))
+            {
+                return path + filename;
+            }
+
+            Debug.LogWarning (uSrcSettings.Inst.path + "/" + uSrcSettings.Inst.game + "/" + filename+": Not Found");
 			return null;
 		}
 	
-		static bool CheckFullFiles(string filename)
+		static bool CheckFullFiles(string path, string filename)
 		{
-			string path=uSrcSettings.Inst.path + "/"+uSrcSettings.Inst.game+"full/";
+			string fullPath= path + "/"+uSrcSettings.Inst.game+"full/";
 			
-			if(!CheckFile(path + filename))
+			if(!CheckFile(fullPath + filename))
 				return false;
 			
 			string dirpath=uSrcSettings.Inst.path + "/" + uSrcSettings.Inst.game + "/";
 			
-			Debug.LogWarning ("Copying: "+path + filename+" to "+dirpath+filename);
+			Debug.LogWarning ("Copying: "+fullPath + filename+" to "+dirpath+filename);
 
 			
 			if(!Directory.Exists (dirpath + filename.Remove(filename.LastIndexOf("/"))))
 				Directory.CreateDirectory(dirpath + filename.Remove(filename.LastIndexOf("/")));
 				
-			File.Copy ( path + filename, dirpath+ filename);
+			File.Copy (fullPath + filename, dirpath+ filename);
 		
 			return true;
 		
@@ -264,29 +276,53 @@ namespace uSrcTools
 			filename=filename.Replace ("//","/");
 			filename+=".vmt";
 			string path="";
-			
-			path = uSrcSettings.Inst.path + "/" + uSrcSettings.Inst.game + "/materials/";
+
+            // Primary path
+            path = uSrcSettings.Inst.path + "/" + uSrcSettings.Inst.game + "/materials/";
 			if(CheckFile(path + filename))
 			{
 				return filename;
 			}
-			else if(CheckFullFiles("materials/"+filename))
+			else if(CheckFullFiles(path, "materials/" +filename))
 			{
 				return filename;
 			}
-			
-			for(int i=0;i<dirs.Length;i++)
+
+            // Secondary path
+            path = uSrcSettings.Inst.secondaryPath + "/" + uSrcSettings.Inst.game + "/materials/";
+            if (CheckFile(path + filename))
+            {
+                return filename;
+            }
+            else if (CheckFullFiles(path, "materials/" + filename))
+            {
+                return filename;
+            }
+
+            for (int i=0;i<dirs.Length;i++)
 			{
-				path = uSrcSettings.Inst.path + "/" + uSrcSettings.Inst.game + "/materials/"+dirs[i];
+                // Primary path
+                path = uSrcSettings.Inst.path + "/" + uSrcSettings.Inst.game + "/materials/"+dirs[i];
 				if(CheckFile(path + filename))
 				{
 					return dirs[i] + filename;
 				}
-				else if(CheckFullFiles("materials/"+dirs[i]+filename))
+				else if(CheckFullFiles(path, "materials/" +dirs[i]+filename))
 				{
 					return dirs[i] + filename;
 				}
-			}
+
+                // Secondary path
+                path = uSrcSettings.Inst.secondaryPath + "/" + uSrcSettings.Inst.game + "/materials/" + dirs[i];
+                if (CheckFile(path + filename))
+                {
+                    return dirs[i] + filename;
+                }
+                else if (CheckFullFiles(path, "materials/" + dirs[i] + filename))
+                {
+                    return dirs[i] + filename;
+                }
+            }
 			
 			Debug.LogWarning ("Model material "+dirs[0]+filename+": Not Found");
 			return dirs[0]+filename;
