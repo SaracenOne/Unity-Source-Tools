@@ -23,7 +23,31 @@ public class TextureExporter : MonoBehaviour
 	public GameObject curMaterial;
 	public string filename = @"I:\uSource/test/textures/test.png";
 
-	public static void Export(string path, Texture2D texture)
+    public static Texture2D Decompress(Texture2D source)
+    {
+        RenderTexture renderTex = RenderTexture.GetTemporary(
+                    source.width,
+                    source.height,
+                    0,
+                    RenderTextureFormat.Default,
+                    RenderTextureReadWrite.Linear);
+
+        Graphics.Blit(source, renderTex);
+
+        RenderTexture previous = RenderTexture.active;
+        RenderTexture.active = renderTex;
+
+        Texture2D readableTexture = new Texture2D(source.width, source.height);
+        readableTexture.ReadPixels(new Rect(0, 0, renderTex.width, renderTex.height), 0, 0);
+        readableTexture.Apply();
+
+        RenderTexture.active = previous;
+        RenderTexture.ReleaseTemporary(renderTex);
+
+        return readableTexture;
+    }
+
+    public static void Export(string path, Texture2D texture)
 	{
 		File.WriteAllBytes(path, texture.EncodeToPNG ());
 	}

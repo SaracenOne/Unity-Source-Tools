@@ -6,64 +6,79 @@ using UnityEngine;
 namespace uSrcTools
 {
 	public class Test : MonoBehaviour
+	{
+		public static Test Inst;
+
+		public SourceBSPLoader bsp;
+		public SourceStudioModel model;
+		public Material testMaterial;
+		public Texture cameraTexture;
+
+		public string exportLocation = "D:\\uSource\\Example\\";
+		public string mapName;
+		public string modelName;
+		public bool skinnedModel = false;
+		public Transform player;
+		public Transform playerCamera;
+		public Transform skyCamera;
+		public Light light_environment;
+		public Vector3 skyCameraOrigin;
+		public Vector3 startPos;
+
+		public bool loadMap = true;
+		public bool loadModel = false;
+		public bool exportMap = false;
+		public bool isL4D2 = false;
+		public bool forceHDR = false;
+		public bool skipSky = true;
+
+        public void Setup()
+        {
+            Inst = this;
+        }
+		void Awake ()
 		{
-			public static Test Inst;
+            Setup();
+		}
+   
+        public bool loadBSP()
+        {
+            //player.transform.position = GameObject.Find ("info_player_start").transform.position;
 
-			public SourceBSPLoader bsp;
-			public SourceStudioModel model;
-			public Material testMaterial;
-			public Texture cameraTexture;
+            bool sceneModified = false;
 
-			public string exportLocation = "D:\\uSource\\Example\\";
-			public string mapName;
-			public string modelName;
-			public bool skinnedModel = false;
-			public Transform player;
-			public Transform playerCamera;
-			public Transform skyCamera;
-			public Light light_environment;
-			public Vector3 skyCameraOrigin;
-			public Vector3 startPos;
+            if (loadMap)
+            {
+                if (bsp == null)
+                    bsp = GetComponent<SourceBSPLoader>();
 
-			public bool loadMap = true;
-			public bool loadModel = false;
-			public bool exportMap = false;
-			public bool isL4D2 = false;
-			public bool forceHDR = false;
-			public bool skipSky = true;
+                sceneModified = bsp.Load(mapName);
+                if (exportMap)
+                {
+                    COLLADAExport.Geometry g = bsp.map.BSPToGeometry();
+                    print("Exporting map.");
+                    //COLLADAExport.Export(@"I:\uSource\test\"+mapName+".dae",g,false,false);
+                    COLLADAExport.Export(exportLocation + mapName + ".dae ", g, false, false);
+                }
+            }
 
-			void Awake ()
-			{
-				Inst = this;
-			}
+            if (loadModel)
+            {
+                sceneModified = true;
 
-			void Start ()
-				{
-					//player.transform.position = GameObject.Find ("info_player_start").transform.position;
+                GameObject modelObj = new GameObject("TestModel ");
+                model.Load(@"models / " + modelName + ".mdl ");
+                //model.GetInstance(modelObj,skinnedModel);
+                model.GetInstance(modelObj, skinnedModel, 0, 0);
+                //modelObj.transform.localEulerAngles=new Vector3(270,0,0);
+            }
 
-					if (loadMap)
-					{
-						if (bsp == null)
-							bsp = GetComponent<SourceBSPLoader> ();
+            return sceneModified;
+        }
 
-						bsp.Load (mapName);
-						if (exportMap)
-						{
-							COLLADAExport.Geometry g = bsp.map.BSPToGeometry ();
-							print ("Exporting map.");
-							//COLLADAExport.Export(@"I:\uSource\test\"+mapName+".dae",g,false,false);
-							COLLADAExport.Export (exportLocation+mapName+".dae ",g,false,false);
-				}
-			}
-
-			if(loadModel)
-			{
-				GameObject modelObj=new GameObject("TestModel ");
-				model.Load (@"models / "+modelName+".mdl ");
-				//model.GetInstance(modelObj,skinnedModel);
-				model.GetInstance (modelObj,skinnedModel,0,0);
-				//modelObj.transform.localEulerAngles=new Vector3(270,0,0);
-			}
+		void Start ()
+		{
+            loadBSP();
 		}
 
 		void Update ()

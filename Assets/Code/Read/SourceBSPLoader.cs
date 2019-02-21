@@ -45,12 +45,12 @@ namespace uSrcTools
 		Texture2D curLightmapTex;
 		int curLightmap = 0;
 
-		public void Load (string mapName)
+		public bool Load (string mapName)
 		{
 			if (loaded)
 			{
 				Debug.LogWarning ("Already loaded");
-				return;
+				return false;
 			}
 			LevelName = mapName;
 
@@ -62,7 +62,7 @@ namespace uSrcTools
 			{
 				print ("No map detected. Check file path.");
 				print (path);
-				return;
+				return false;
 			}
 
 			BinaryReader BR = new BinaryReader (File.Open (path, FileMode.Open));
@@ -75,7 +75,18 @@ namespace uSrcTools
 				ParseEntities (map.entitiesLump);
 			}
 
-			//===================================================
+            //===================================================
+
+            // Cleanup old GameObjects
+            GameObject[] rootGameObjects = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects();
+            foreach (GameObject currentGameObject in rootGameObjects)
+            {
+                if (currentGameObject.name == LevelName || currentGameObject.name == "models")
+                {
+                    DestroyImmediate(currentGameObject);
+                }
+            }
+
 			mapObject = new GameObject (LevelName);
 			mapObject.isStatic = true;
 
@@ -242,6 +253,8 @@ namespace uSrcTools
 
 			BR.BaseStream.Dispose ();
 			GC.Collect ();
+
+            return true;
 		}
 
 		void ParseEntities (string input)
@@ -431,8 +444,8 @@ namespace uSrcTools
 					else if (className == "prop_button")
 						modelName = "models/props/switch001.mdl";
 
-					//angles.y-=90;
-					//Kostyl
+                    //angles.y-=90;
+                    //Kostyl
 					//if(modelName.Contains("signage_num0"))
 					//	angles.y+=90;
 					//======

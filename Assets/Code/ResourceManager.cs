@@ -1,4 +1,7 @@
 ﻿using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using System.Collections.Generic;
 using System.IO;
 
@@ -20,9 +23,75 @@ namespace uSrcTools
 		public Dictionary <string, Material> Materials 				= new Dictionary<string, Material> ();
 		public Dictionary <string, VMTLoader.VMTFile> VMTMaterials 	= new Dictionary<string, VMTLoader.VMTFile> ();
 
+        private static string GetAssetDirectoryPath(string fullPath)
+        {
+            string reconstructedPath = "";
+            string[] splitPath = fullPath.Split('/','\\');
+
+            for(int i = 0; i < splitPath.Length-1; i++)
+            {
+                reconstructedPath += splitPath[i] + '/';
+            }
+
+            return reconstructedPath;
+        }
+
+        private static Material SerializeMaterial(string materialName, Material material)
+        {
+#if UNITY_EDITOR
+            if (!UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode && material)
+            {
+                string pathDirectory = GetAssetDirectoryPath(materialName);
+
+                if (!Directory.Exists("Assets/UST/" + pathDirectory))
+                {
+                    Directory.CreateDirectory("Assets/UST/" + pathDirectory);
+                }
+
+                string fullPath = "Assets/UST/" + materialName + ".mat";
+                if (AssetDatabase.FindAssets(fullPath, null).Length > 0)
+                {
+                    AssetDatabase.DeleteAsset(fullPath);
+                }
+
+                AssetDatabase.CreateAsset(material, fullPath);
+            }
+#endif
+            return material;
+        }
+
+        private static Texture SerializeTexture(string textureName, Texture2D texture)
+        {
+#if UNITY_EDITOR
+            if (!UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode && texture)
+            {
+                string pathDirectory = GetAssetDirectoryPath(textureName);
+
+                if (!Directory.Exists("Assets/UST/" + pathDirectory))
+                {
+                    Directory.CreateDirectory("Assets/UST/" + pathDirectory);
+                }
+
+                string fullPath = "Assets/UST/" + textureName + ".tex.asset";
+                if (AssetDatabase.FindAssets(fullPath, null).Length > 0)
+                {
+                    AssetDatabase.DeleteAsset(fullPath);
+                }
+
+                AssetDatabase.CreateAsset(texture, fullPath);
+            }
+#endif
+            return texture;
+        }
+
+        public void Setup()
+        {
+            inst = this;
+        }
+
 		void Awake()
 		{
-			inst = this;
+            Setup();
 		}
 
 		public SourceStudioModel GetModel(string modelName)
@@ -68,7 +137,11 @@ namespace uSrcTools
 			else
 			{
 				if (!Textures.ContainsKey (textureName))
-					Textures.Add (textureName, VTFLoader.LoadFile (textureName));
+                {
+                    Texture2D texture = VTFLoader.LoadFile (textureName);
+                    Texture finalTexture = SerializeTexture (textureName, texture);
+                    Textures.Add (textureName, finalTexture);
+                }
 				return Textures [textureName];
 			}
 		}
@@ -194,9 +267,11 @@ namespace uSrcTools
 					if(dudvTex==null)
 						Debug.LogWarning("Error loading texture "+dudv+" from material "+materialName);
 				}
-					
-				Materials.Add (materialName,tempmat);
-				return tempmat;
+
+
+                Material finalMaterial = SerializeMaterial(tempmat.name, tempmat);
+                Materials.Add (materialName, finalMaterial);
+				return finalMaterial;
 			}
 			else
 			{
@@ -206,7 +281,7 @@ namespace uSrcTools
 			}
 		}
 
-		public static string GetPath(string filename)
+        public static string GetPath(string filename)
 		{
 			filename=filename.Replace ("\\","/");
 			filename=filename.Replace ("//","/");

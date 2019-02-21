@@ -51,13 +51,18 @@ namespace uSrcTools
 		public Shader Sky;
 		public Shader Solid;*/
 
+        public void Setup()
+        {
+            inst = this;
+
+            if (diffuseMaterial == null)
+                //diffuseMaterial = Shader.Find ("Diffuse");
+                print("diffuse material is not there, please fix");
+        }
+
 		void Awake ()
 		{
-			inst = this;
-
-			if (diffuseMaterial == null)
-				//diffuseMaterial = Shader.Find ("Diffuse");
-				print ("diffuse material is not there, please fix");
+            Setup();
 		}
 	}
 }
