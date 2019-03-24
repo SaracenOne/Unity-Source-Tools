@@ -86,22 +86,43 @@ namespace uSrcTools
 					hasLightmaps=true;
 					lightingLump = ReadLighting ();
 					onlyHDR=false;
-					facesLump = ReadFaces (SourceBSPStructs.LUMP_FACES);
-				}
+                    if (header.version > 17)
+                    {
+                        facesLump = ReadFaces(SourceBSPStructs.LUMP_FACES);
+                    }
+                    else
+                    {
+                        facesLump = ReadFaces17(SourceBSPStructs.LUMP_FACES); // Vampire: The Masquerade - Bloodlines
+                    }
+                }
 				else if(header.lumps[SourceBSPStructs.LUMP_LIGHTING_HDR].filelen>0)
 				{
 					hasLightmaps=true;
 					lightingLump = ReadHDRLighting ();
 					onlyHDR=true;
-					facesLump = ReadFaces (SourceBSPStructs.LUMP_FACES_HDR);
-				}
+                    if (header.version > 17)
+                    {
+                        facesLump = ReadFaces(SourceBSPStructs.LUMP_FACES_HDR);
+                    }
+                    else
+                    {
+                        facesLump = ReadFaces17(SourceBSPStructs.LUMP_FACES_HDR); // Vampire: The Masquerade - Bloodlines
+                    }
+                }
 				else
 					hasLightmaps=false;
 			}
 			else
 			{
 				hasLightmaps = false;
-				facesLump = ReadFaces (SourceBSPStructs.LUMP_FACES);
+                if (header.version > 17)
+                {
+                    facesLump = ReadFaces(SourceBSPStructs.LUMP_FACES);
+                }
+                else
+                {
+                    facesLump = ReadFaces17(SourceBSPStructs.LUMP_FACES); // Vampire: The Masquerade - Bloodlines
+                }
 			}
 			//
 			//
@@ -295,8 +316,43 @@ namespace uSrcTools
 			//Debug.Log ("Load: "+numFaces+" Faces");
 			return temp;
 		}
-		
-		Color32[] ReadLighting()
+
+        bspface[] ReadFaces17(int lump)
+        {
+            br.BaseStream.Seek(header.lumps[lump].fileofs, SeekOrigin.Begin);
+            int numFaces = header.lumps[lump].filelen / 104;
+            bspface[] temp = new bspface[numFaces];
+            for (int i = 0; i < numFaces; i++)
+            {
+                bspface face = new bspface();
+                br.ReadBytes(4 * 8); // m_AvgLightColor
+                face.planenum = br.ReadUInt16();
+                face.side = br.ReadByte();
+                face.onNode = br.ReadByte();
+                face.firstedge = br.ReadInt32();
+                face.numedges = br.ReadInt16();
+                face.texinfo = br.ReadInt16();
+                face.dispinfo = br.ReadInt16();
+                face.surfaceFogVolumeID = br.ReadInt16();
+                face.styles = br.ReadBytes(8);
+                br.ReadBytes(8); // day
+                br.ReadBytes(8); // night
+                face.lightofs = br.ReadInt32();
+                face.area = br.ReadSingle();
+                face.LightmapTextureMinsInLuxels = new int[] { br.ReadInt32(), br.ReadInt32() };
+                face.LightmapTextureSizeInLuxels = new int[] { br.ReadInt32(), br.ReadInt32() };
+                face.origFace = br.ReadInt32();
+                face.numPrims = 0;
+                face.firstPrimID = 0;
+                face.smoothingGroups = br.ReadUInt32();
+                temp[i] = face;
+            }
+            tempLog += ("Load: " + numFaces + " Faces \n");
+            //Debug.Log ("Load: "+numFaces+" Faces");
+            return temp;
+        }
+
+        Color32[] ReadLighting()
 		{
 			br.BaseStream.Seek (header.lumps [SourceBSPStructs.LUMP_LIGHTING].fileofs, SeekOrigin.Begin);
 			int lmapCount = header.lumps[SourceBSPStructs.LUMP_LIGHTING].filelen / 4;

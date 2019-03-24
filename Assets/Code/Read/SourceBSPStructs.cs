@@ -135,7 +135,31 @@ namespace uSrcTools
 		public uint	smoothingGroups;	// lightmap smoothing group
 	} //56 bytes
 
-	[Serializable]
+    public struct bspface17
+    {
+        Color32[] m_AvgLightColor;//8
+        public ushort planenum;
+        public byte side;
+        public byte onNode;
+        public int firstedge;
+        public short numedges;
+        public short texinfo;
+        public short dispinfo;
+        public short surfaceFogVolumeID;
+        public byte[] styles;//8
+        public byte[] day;//8
+        public byte[] night;//8
+        public int lightofs;
+        public float area;
+        public int[] LightmapTextureMinsInLuxels;//2  	// texture lighting info
+        public int[] LightmapTextureSizeInLuxels;//2 	// texture lighting info
+        public int origFace;        // original face this was split from
+        public ushort numPrims;     // primitives
+        public ushort firstPrimID;
+        public uint smoothingGroups;    // lightmap smoothing group
+    } //104 bytes
+
+    [Serializable]
 	public struct bspbrush
 	{
 		public int	firstside;	// first brushside
