@@ -100,7 +100,15 @@ namespace uSrcTools
 			return new Color32((byte)short.Parse(colStrings[0]),(byte)short.Parse(colStrings[1]), (byte)short.Parse(colStrings[2]),alpha);
 		}
 
-		public static float[] Vector3ArrayToFloatArray(Vector3[] vecIn)
+        public static int stringToAlpha(string input)
+        {
+            string[] colStrings = input.Trim().Split(' ');
+            if (input == "0" || colStrings.Length == 1)
+                return 10;
+            return short.Parse(colStrings[3]);
+        }
+
+        public static float[] Vector3ArrayToFloatArray(Vector3[] vecIn)
 		{
 			float[] fOut=new float[vecIn.Length*3];
 
