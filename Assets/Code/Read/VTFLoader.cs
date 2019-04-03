@@ -3,6 +3,7 @@ using System.Collections;
 using System.IO;
 using System;
 using System.Linq;
+using System.IO.Compression;
 
 namespace uSrcTools
 {
@@ -31,6 +32,15 @@ public class VTFLoader : MonoBehaviour
 		public byte	lowResImageHeight;	// Low resolution image height.
 		public ushort depth;			// Depth of the largest mipmap in pixels.
 										// Must be a power of 2. Can be 0 or 1 for a 2D texture (v7.2 only).
+	}
+
+	public struct troikaTextureHeader
+	{
+		public string signature;
+        public ushort numVTF;
+	    public ushort flags;
+	    public uint VTFSize;
+        public char[] Padding2;
 	}
 
 	public enum VTFImageFormat
@@ -81,46 +91,154 @@ public class VTFLoader : MonoBehaviour
 	
 	public bool remipmap;
 
-	public static Texture2D LoadFile(string name)
+    public static bool IsTTFileLoad(string name)
+    {
+        string fullName = "";
+        string path = "";
+
+        if(!name.Contains(".tth"))
+            fullName = name + ".tth";
+
+        path = ResourceManager.GetPath ("materials/"+fullName);
+		if(path==null)
+		{
+			return false;
+		}
+
+        if(!name.Contains(".ttz"))
+            fullName = name + ".ttz";
+
+        path = ResourceManager.GetPath ("materials/"+fullName);
+		if(path==null)
+		{
+			return false;
+		}
+
+        return true;
+    }
+
+    public static Texture2D LoadFile(string name)
 	{
 		BinaryReader BR;
 
 		string path = "";
+        string fullName = "";
 
-		if(!name.Contains(".vtf"))
-			name+=".vtf";
+        bool isTTFile = IsTTFileLoad(name);
+        
+        if (!isTTFile) {
+		    if(!name.Contains(".vtf"))
+			    fullName = name + ".vtf";
 
-		path = ResourceManager.GetPath ("materials/"+name);
+		    path = ResourceManager.GetPath ("materials/"+ fullName);
 		
-		if(path==null)
-		{
-		//	Debug.LogWarning("materials/"+name+".vtf: Not Found");
-			return null;
-		}
+		    if(path==null)
+		    {
+		    //	Debug.LogWarning("materials/"+name+".vtf: Not Found");
+			    return null;
+		    }
 
-		BR = new BinaryReader (File.Open (path, FileMode.Open));
+		    BR = new BinaryReader (File.Open (path, FileMode.Open));
 
-		vtfheader header = ReadHeader (BR);
+            BR.BaseStream.Seek (0, SeekOrigin.Begin);
+		    vtfheader header = ReadHeader (BR);
 
-		byte[] ImageData;
-		uint ImageDataSize;
-		byte[] ThumbnailImageData;
-		uint ThumbnailDataSize;
+		    byte[] ImageData;
+		    uint ImageDataSize;
+		    byte[] ThumbnailImageData;
+		    uint ThumbnailDataSize;
 
-		ReadData (BR, header,out ImageData, out ImageDataSize, out ThumbnailImageData, out ThumbnailDataSize);
+		    ReadData (BR, header,out ImageData, out ImageDataSize, out ThumbnailImageData, out ThumbnailDataSize);
 
-		BR.BaseStream.Dispose ();
-		//return CreateThumbnailTexture (name);
+		    BR.BaseStream.Dispose ();
+		    //return CreateThumbnailTexture (name);
 
 
-		return CreateTexture (name, header,ImageData);
+		    return CreateTexture (fullName,header,ImageData);
+        } else {
+		    if(!name.Contains(".tth"))
+			    fullName = name + ".tth";
+
+		    path = ResourceManager.GetPath ("materials/"+ fullName);
+
+ 		    if(path==null)
+		    {
+		    //	Debug.LogWarning("materials/"+name+".tth: Not Found");
+			    return null;
+		    }
+
+            BR = new BinaryReader (File.Open (path, FileMode.Open));
+
+            BR.BaseStream.Seek (0, SeekOrigin.Begin);
+            troikaTextureHeader tkheader = ReadTroikaTextureHeader (BR);
+
+            BR.BaseStream.Seek (-tkheader.VTFSize, SeekOrigin.End);
+            vtfheader header = ReadHeader (BR);
+
+            BR.BaseStream.Dispose();
+
+            if (!name.Contains(".ttz"))
+                fullName = name + ".ttz";
+
+            path = ResourceManager.GetPath("materials/" + fullName);
+
+            if (path == null)
+            {
+                //	Debug.LogWarning("materials/"+name+".tth: Not Found");
+                return null;
+            }
+
+            MemoryStream outputMemoryStream = new MemoryStream();
+
+            byte[] queueBuffer = new byte[4096]; 
+            DeflateStream zstream = new DeflateStream(File.Open(path, FileMode.Open), CompressionMode.Decompress);
+            while (true)
+            {
+                int readBytes = zstream.Read(queueBuffer, 0, 4096);
+                if (readBytes == 0)
+                {
+                    break;
+                }
+                else
+                {
+                    outputMemoryStream.Write(queueBuffer, 0, readBytes);
+                }
+            }
+            zstream.Dispose();
+
+            BR = new BinaryReader (outputMemoryStream);
+
+            BR.BaseStream.Seek (0, SeekOrigin.Begin);
+
+		    byte[] ImageData;
+		    uint ImageDataSize;
+		    byte[] ThumbnailImageData;
+		    uint ThumbnailDataSize;
+
+		    ReadData (BR, header,out ImageData, out ImageDataSize, out ThumbnailImageData, out ThumbnailDataSize);
+
+		    BR.BaseStream.Dispose ();
+		    //return CreateThumbnailTexture (name);
+
+		    return CreateTexture (fullName,header,ImageData);
+        }
 	}
 
+ 	static troikaTextureHeader ReadTroikaTextureHeader(BinaryReader BR)
+    {
+        troikaTextureHeader header = new troikaTextureHeader ();
+        
+        header.signature = new string (BR.ReadChars(4));
+        header.numVTF = BR.ReadUInt16();
+        header.flags = BR.ReadUInt16();
+        header.VTFSize = BR.ReadUInt32();
 
+        return header;
+    }
 
 	static vtfheader ReadHeader(BinaryReader BR)
 	{
-		BR.BaseStream.Seek (0, SeekOrigin.Begin);
+		//BR.BaseStream.Seek (0, SeekOrigin.Begin);
 		vtfheader header = new vtfheader ();
 
 		header.signature = new string (BR.ReadChars(4));

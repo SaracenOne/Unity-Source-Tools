@@ -101,7 +101,8 @@ namespace uSrcTools
 							temp=line.Trim().Split(new char[] {' ', '\t'},2);
 							if(temp.Length<2)
 								Debug.Log (path+" "+line);
-							parameters.Add(temp[0].Trim('"').ToLower(), temp[1].Trim().Trim('"'));
+                            if (!parameters.ContainsKey(temp[0].Trim('"').ToLower()))
+                                parameters.Add(temp[0].Trim('"').ToLower(), temp[1].Trim().Trim('"'));
 						}
 					}
 				}
