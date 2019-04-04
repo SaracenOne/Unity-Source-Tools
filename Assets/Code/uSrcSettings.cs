@@ -30,8 +30,12 @@ namespace uSrcTools
 		public bool showTriggers = false;
 		public bool genColliders = false;
         public float displacementTextureScaleOverride = 0.0f;
-        public bool useSourceLightIntensity = false;
-        public float lightIntensityScale = 0.01f;
+        public bool useSourcePointLightIntensity = false;
+        public float pointLightIntensityScale = 0.01f;
+        public bool useSourceSpotLightIntensity = false;
+        public float spotLightIntensityScale = 0.01f;
+        public bool useSourceEnvironmentLightIntensity = false;
+        public float environmentLightIntensityScale = 0.01f;
 
         //public Shader sDiffuse;
         public Material diffuseMaterial;

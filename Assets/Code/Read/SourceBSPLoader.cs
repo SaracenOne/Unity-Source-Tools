@@ -372,8 +372,8 @@ namespace uSrcTools
 					Light l = obj.AddComponent<Light>();
                     l.type = LightType.Point;
                     l.color = ConvertUtils.stringToColor(data[data.FindIndex (n=>n=="_light")+1],255);
-                    if (uSrcSettings.Inst.useSourceLightIntensity)
-                        l.intensity = (float)ConvertUtils.stringToAlpha(data[data.FindIndex(n => n == "_light") + 1]) * uSrcSettings.Inst.lightIntensityScale;
+                    if (uSrcSettings.Inst.useSourcePointLightIntensity)
+                        l.intensity = (float)ConvertUtils.stringToAlpha(data[data.FindIndex(n => n == "_light") + 1]) * uSrcSettings.Inst.pointLightIntensityScale;
                     l.lightmapBakeType = LightmapBakeType.Baked;
 				}
 				if(className=="light_spot")
@@ -381,8 +381,8 @@ namespace uSrcTools
 					Light l = obj.AddComponent<Light>();
 					l.type=LightType.Spot;
 					l.color = ConvertUtils.stringToColor(data[data.FindIndex (n=>n=="_light")+1],255);
-                    if (uSrcSettings.Inst.useSourceLightIntensity)
-                        l.intensity = (float)ConvertUtils.stringToAlpha(data[data.FindIndex(n => n == "_light") + 1]) * uSrcSettings.Inst.lightIntensityScale;
+                    if (uSrcSettings.Inst.useSourceSpotLightIntensity)
+                        l.intensity = (float)ConvertUtils.stringToAlpha(data[data.FindIndex(n => n == "_light") + 1]) * uSrcSettings.Inst.spotLightIntensityScale;
                     l.lightmapBakeType = LightmapBakeType.Baked;
 					//float pitch = 0;
 					//if(data.Contains ("pitch"))
@@ -400,8 +400,8 @@ namespace uSrcTools
 				{
 					Light l = Test.Inst.light_environment;
 					l.color = ConvertUtils.stringToColor (data[data.FindIndex (n => n == "_light") + 1], 255);
-                    if (uSrcSettings.Inst.useSourceLightIntensity)
-                       l.intensity = (float)ConvertUtils.stringToAlpha(data[data.FindIndex(n => n == "_light") + 1]) * uSrcSettings.Inst.lightIntensityScale;
+                    if (uSrcSettings.Inst.useSourceEnvironmentLightIntensity)
+                       l.intensity = (float)ConvertUtils.stringToAlpha(data[data.FindIndex(n => n == "_light") + 1]) * uSrcSettings.Inst.environmentLightIntensityScale;
                     //float pitch = 0;
                     //if(data.Contains ("pitch"))
                     //	pitch = float.Parse (data[data.FindIndex (n=>n=="pitch")+1]);
