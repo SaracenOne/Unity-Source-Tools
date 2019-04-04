@@ -43,7 +43,37 @@ public class VTFLoader : MonoBehaviour
         public char[] Padding2;
 	}
 
-	public enum VTFImageFormat
+    const int IMAGE_FLAG_POINT_SAMPLING = 0x0001;
+    const int IMAGE_FLAG_TRILINEAR_SAMPLING = 0x0002;
+    const int IMAGE_FLAG_CLAMP_S = 0x0004;
+    const int IMAGE_FLAG_CLAMP_T = 0x0008;
+    const int IMAGE_FLAG_ANISOTROPIC_SAMPLING = 0x0010;
+    const int IMAGE_FLAG_HINT_DXT5 = 0x0020;
+    const int IMAGE_FLAG_NO_COMPRESS = 0x0040;
+    const int IMAGE_FLAG_NORMAL_MAP = 0x0080;
+    const int IMAGE_FLAG_NO_MIPMAPS = 0x0100;
+    const int IMAGE_FLAG_NO_LEVEL_OF_DETAIL = 0x0200;
+    const int IMAGE_FLAG_NO_MINIMUM_MIPMAP = 0x0400;
+    const int IMAGE_FLAG_PROCEDURAL = 0x0800;
+    const int IMAGE_FLAG_ONE_BIT_ALPHA = 0x1000;
+    const int IMAGE_FLAG_EIGHT_BIT_ALPHA = 0x2000;
+    const int IMAGE_FLAG_ENVIRONMENT_MAP = 0x4000;
+    const int IMAGE_FLAG_RENDER_TARGET = 0x8000;
+    const int IMAGE_FLAG_DEPTH_RENDER_TARGET = 0x10000;
+    const int IMAGE_FLAG_NO_DEBUG_OVERRIDE = 0x20000;
+    const int IMAGE_FLAG_SINGLE_COPY = 0x40000;
+    const int IMAGE_FLAG_PRE_SRGB = 0x80000;
+    const int IMAGE_FLAG_PREMULTIPLY_COLOR_BY_ONE_OVER_MIPMAP_LEVEL = 0x100000;
+    const int IMAGE_FLAG_NORMAL_TO_DUDV = 0x200000;
+    const int IMAGE_FLAG_ALPHA_TEST_MIPMAP_GENERATION = 0x400000;
+    const int IMAGE_FLAG_NO_DEPTH_BUFFER = 0x800000;
+    const int IMAGE_FLAG_NICE_FILTERED = 0x1000000;
+    const int IMAGE_FLAG_CLAMP_U = 0x2000000;
+    const int IMAGE_FLAG_VERTEX_TEXTURE = 0x4000000;
+    const int IMAGE_FLAG_SSBUMP = 0x8000000;
+    const int IMAGE_FLAG_BORDER = 0x20000000;
+
+    public enum VTFImageFormat
 	{
 		IMAGE_FORMAT_RGBA8888 = 0,				//!<  = Red, Green, Blue, Alpha - 32 bpp
 		IMAGE_FORMAT_ABGR8888,					//!<  = Alpha, Blue, Green, Red - 32 bpp
@@ -283,9 +313,28 @@ public class VTFLoader : MonoBehaviour
 		data = BR.ReadBytes ((int)dataSize);
 	}
 
+    static int CalculateVTFMipOffset(short width, short height, byte mipCount) 
+    {
+        int mipOffset = 0;
+        for(int i = mipCount-1; i>0;i--)
+        {
+            mipOffset += (width / (1 << i)) * (height / (1 << i));
+        }
+        return mipOffset;
+    }
+
 	static Texture2D CreateTexture(string name, vtfheader header, byte[] ImageData)
 	{
+        bool isLinear = false;
+        bool usesMipMaps = true;
+
 		Texture2D temp;
+
+        if ((header.flags & IMAGE_FLAG_NORMAL_MAP) != 0)
+        {
+            isLinear = true;
+        }
+
 		if (header.highResImageFormat == VTFImageFormat.IMAGE_FORMAT_DXT5) 
 		{
 			temp=new Texture2D((int)header.width, (int)header.height, TextureFormat.DXT5,false);
@@ -297,7 +346,7 @@ public class VTFLoader : MonoBehaviour
 			//if(remipmap)
 			//{
 				Color32[] tempCol = temp.GetPixels32();
-				temp = new Texture2D((int)header.width, (int)header.height, TextureFormat.RGBA32, true);
+				temp = new Texture2D((int)header.width, (int)header.height, TextureFormat.RGBA32, usesMipMaps, isLinear);
 				temp.SetPixels32(tempCol);
 				temp.Apply(true);
 				temp.Compress(true);
@@ -320,7 +369,7 @@ public class VTFLoader : MonoBehaviour
 			//if(remipmap)
 			//{
 				Color32[] tempCol = temp.GetPixels32();
-				temp = new Texture2D((int)header.width, (int)header.height, TextureFormat.RGBA32, true);
+				temp = new Texture2D((int)header.width, (int)header.height, TextureFormat.RGBA32, usesMipMaps, isLinear);
 				temp.SetPixels32(tempCol);
 				temp.Apply(true);
 				temp.Compress(true);
@@ -331,11 +380,13 @@ public class VTFLoader : MonoBehaviour
 		}
 		if (header.highResImageFormat == VTFImageFormat.IMAGE_FORMAT_BGR888) 
 		{
-			temp = new Texture2D((int)header.width, (int)header.height, TextureFormat.RGB24,true);
+            int mipOffset = CalculateVTFMipOffset(header.width, header.height, header.mipmapCount);
+
+			temp = new Texture2D((int)header.width, (int)header.height, TextureFormat.RGB24,usesMipMaps,isLinear);
 			Color32[] colors = new Color32[header.width * header.height];
 			for(int i=0; i<header.width * header.height; i++)
 			{
-				colors[i] = new Color32(ImageData[i*3+2],ImageData[i*3+1],ImageData[i*3],255);
+				colors[i] = new Color32(ImageData[(mipOffset*3)+(i*3)+2],ImageData[(mipOffset*3)+(i*3)+1],ImageData[(mipOffset*3)+i*3],255);
 			}
 			temp.SetPixels32(colors);
 			temp.Apply ();
@@ -345,7 +396,7 @@ public class VTFLoader : MonoBehaviour
 		}
 		if (header.highResImageFormat == VTFImageFormat.IMAGE_FORMAT_BGRA8888) 
 		{
-			temp = new Texture2D((int)header.width, (int)header.height, TextureFormat.BGRA32,false);
+			temp = new Texture2D((int)header.width, (int)header.height, TextureFormat.BGRA32,false, isLinear);
 			/*Color32[] colors = new Color32[header.width * header.height];
 			for(int i=0; i<header.width * header.height; i++)
 			{

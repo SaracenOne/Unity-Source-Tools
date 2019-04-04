@@ -204,7 +204,7 @@ namespace uSrcTools
 
 			if(parameters.ContainsKey("$bumpmap"))
 			{
-				material.bumpmap=parameters["$bumpmap"];
+				material.dudvmap=parameters["$bumpmap"];
 			}
 
 			if(parameters.ContainsKey("$surfaceprop"))

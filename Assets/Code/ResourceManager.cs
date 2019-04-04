@@ -259,7 +259,7 @@ namespace uSrcTools
 					//tempmat.color = new Color (1, 1, 1, 0f);
 				}
 				
-				if(vmtFile.dudvmap!=null&vmtFile.shader=="refract")
+				if(vmtFile.dudvmap!=null)
 				{
 					string dudv=vmtFile.dudvmap.ToLower ();
 					Texture dudvTex=GetTexture(dudv);
