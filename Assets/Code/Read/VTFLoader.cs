@@ -184,7 +184,7 @@ public class VTFLoader : MonoBehaviour
 		    //return CreateThumbnailTexture (name);
 
 
-		    return CreateTexture (fullName,header,ImageData, asNormalMap);
+		    return CreateTexture (fullName,header,ImageData, asNormalMap,true);
         } else {
 		    if(!name.Contains(".tth"))
 			    fullName = name + ".tth";
@@ -250,7 +250,7 @@ public class VTFLoader : MonoBehaviour
 		    BR.BaseStream.Dispose ();
 		    //return CreateThumbnailTexture (name);
 
-		    return CreateTexture (fullName,header,ImageData,asNormalMap);
+		    return CreateTexture (fullName,header,ImageData,asNormalMap,true);
         }
 	}
 
@@ -323,7 +323,7 @@ public class VTFLoader : MonoBehaviour
         return mipOffset;
     }
 
-	static Texture2D CreateTexture(string name, vtfheader header, byte[] ImageData, bool asNormalMap)
+	static Texture2D CreateTexture(string name, vtfheader header, byte[] ImageData, bool asNormalMap, bool useCompression)
 	{
         bool isLinear = false;
         bool usesMipMaps = true;
@@ -362,7 +362,10 @@ public class VTFLoader : MonoBehaviour
                 temp = new Texture2D((int)header.width, (int)header.height, TextureFormat.RGBA32, usesMipMaps, isLinear);
 				temp.SetPixels32(tempCol);
 				temp.Apply(true);
-				temp.Compress(true);
+                if(useCompression)
+                {
+	    			temp.Compress(true);
+                }
 			//}
 			temp.name = name;
 
@@ -392,7 +395,10 @@ public class VTFLoader : MonoBehaviour
                 temp = new Texture2D((int)header.width, (int)header.height, TextureFormat.RGBA32, usesMipMaps, isLinear);
 				temp.SetPixels32(tempCol);
 				temp.Apply(true);
-				temp.Compress(true);
+                if(useCompression)
+                {
+	    			temp.Compress(true);
+                }
 			//}
 			temp.name = name;
 			//Debug.Log("Texture loaded "+header.width+"x"+header.height);
@@ -403,7 +409,8 @@ public class VTFLoader : MonoBehaviour
             || header.highResImageFormat == VTFImageFormat.IMAGE_FORMAT_RGB888
             || header.highResImageFormat == VTFImageFormat.IMAGE_FORMAT_BGR888
             || header.highResImageFormat == VTFImageFormat.IMAGE_FORMAT_BGRA8888
-            || header.highResImageFormat == VTFImageFormat.IMAGE_FORMAT_ARGB8888) 
+            || header.highResImageFormat == VTFImageFormat.IMAGE_FORMAT_ARGB8888
+            || header.highResImageFormat == VTFImageFormat.IMAGE_FORMAT_A8) 
 		{
             int mipOffset = CalculateVTFMipOffset(header.width, header.height, header.mipmapCount);
             int byteCount = 0;
@@ -434,6 +441,10 @@ public class VTFLoader : MonoBehaviour
                 case VTFImageFormat.IMAGE_FORMAT_ARGB8888:
                     byteCount = 4;
                     pixelIndices[0] = 1; pixelIndices[1] = 2; pixelIndices[2] = 3; pixelIndices[3] = 0;
+                    break;
+                case VTFImageFormat.IMAGE_FORMAT_A8:
+                    byteCount = 1;
+                    pixelIndices[0] = 0xff; pixelIndices[1] = 0xff; pixelIndices[2] = 0xff; pixelIndices[3] = 0;
                     break;
                 default:
                     return null;

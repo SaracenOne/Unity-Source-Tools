@@ -265,6 +265,7 @@ namespace uSrcTools
 					Texture normalMapTex=GetTexture(normalMapName, normalMapName, true);
                     if (normalMapTex)
                     {
+                        tempmat.EnableKeyword("_NORMALMAP");
                         tempmat.SetTexture("_BumpMap", normalMapTex);
                     }
                     else
@@ -282,6 +283,7 @@ namespace uSrcTools
                         Texture normalMapTex = GetTexture(normalMapName, normalMapName, true);
                         if (normalMapTex)
                         {
+                            tempmat.EnableKeyword("_NORMALMAP");
                             tempmat.SetTexture("_BumpMap", normalMapTex);
                         }
                         else
