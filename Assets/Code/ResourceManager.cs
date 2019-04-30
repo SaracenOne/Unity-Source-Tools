@@ -125,7 +125,7 @@ namespace uSrcTools
 			return vmtFile;
 		}
 
-		public Texture GetTexture(string textureName)
+		public Texture GetTexture(string textureName, string appendedOutName, bool asNormalMap)
 		{
 			textureName=textureName.ToLower();
 			if(textureName.Contains("_rt_camera"))
@@ -136,13 +136,13 @@ namespace uSrcTools
 			}
 			else
 			{
-				if (!Textures.ContainsKey (textureName))
+				if (!Textures.ContainsKey (appendedOutName))
                 {
-                    Texture2D texture = VTFLoader.LoadFile (textureName);
+                    Texture2D texture = VTFLoader.LoadFile (textureName, asNormalMap);
                     Texture finalTexture = SerializeTexture (textureName, texture);
-                    Textures.Add (textureName, finalTexture);
+                    Textures.Add(appendedOutName, finalTexture);
                 }
-				return Textures [textureName];
+				return Textures[appendedOutName];
 			}
 		}
 
@@ -209,7 +209,7 @@ namespace uSrcTools
 					tempmat = new Material(uSrcSettings.Inst.sWorldVertexTransition);
 
 					string bt2=vmtFile.basetexture2;
-					Texture tex2=GetTexture(bt2);
+					Texture tex2=GetTexture(bt2, bt2, false);
 					tempmat.SetTexture("_MainTex2",tex2);
 					if(tex2==null)
 						Debug.LogWarning("Error loading second texture "+bt2+" from material "+materialName);
@@ -248,7 +248,7 @@ namespace uSrcTools
 				{
 					textureName = textureName.ToLower();
 
-					Texture mainTex=GetTexture(textureName);
+					Texture mainTex=GetTexture(textureName, textureName, false);
 					tempmat.mainTexture = mainTex;
 					if(mainTex==null)
 						Debug.LogWarning("Error loading texture "+textureName+" from material "+materialName);
@@ -261,12 +261,35 @@ namespace uSrcTools
 				
 				if(vmtFile.dudvmap!=null)
 				{
-					string dudv=vmtFile.dudvmap.ToLower ();
-					Texture dudvTex=GetTexture(dudv);
-					tempmat.SetTexture("_BumpMap",dudvTex);
-					if(dudvTex==null)
-						Debug.LogWarning("Error loading texture "+dudv+" from material "+materialName);
+					string normalMapName=vmtFile.dudvmap.ToLower ();
+					Texture normalMapTex=GetTexture(normalMapName, normalMapName, true);
+                    if (normalMapTex)
+                    {
+                        tempmat.SetTexture("_BumpMap", normalMapTex);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("Error loading texture " + normalMapTex + " from material " + materialName);
+                    }
 				}
+                else
+                {
+                    // Attempt to automatically find or generate normal map
+                    if(textureName!=null)
+                    {
+                        textureName = textureName.ToLower();
+                        string normalMapName = textureName + "_normal";
+                        Texture normalMapTex = GetTexture(normalMapName, normalMapName, true);
+                        if (normalMapTex)
+                        {
+                            tempmat.SetTexture("_BumpMap", normalMapTex);
+                        }
+                        else
+                        {
+                            // TODO: automatic normal map generation
+                        }
+                    }
+                }
 
 
                 Material finalMaterial = SerializeMaterial(tempmat.name, tempmat);

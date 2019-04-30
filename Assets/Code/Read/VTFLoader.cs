@@ -147,7 +147,7 @@ public class VTFLoader : MonoBehaviour
         return true;
     }
 
-    public static Texture2D LoadFile(string name)
+    public static Texture2D LoadFile(string name, bool asNormalMap)
 	{
 		BinaryReader BR;
 
@@ -184,7 +184,7 @@ public class VTFLoader : MonoBehaviour
 		    //return CreateThumbnailTexture (name);
 
 
-		    return CreateTexture (fullName,header,ImageData);
+		    return CreateTexture (fullName,header,ImageData, asNormalMap);
         } else {
 		    if(!name.Contains(".tth"))
 			    fullName = name + ".tth";
@@ -250,7 +250,7 @@ public class VTFLoader : MonoBehaviour
 		    BR.BaseStream.Dispose ();
 		    //return CreateThumbnailTexture (name);
 
-		    return CreateTexture (fullName,header,ImageData);
+		    return CreateTexture (fullName,header,ImageData,asNormalMap);
         }
 	}
 
@@ -323,16 +323,22 @@ public class VTFLoader : MonoBehaviour
         return mipOffset;
     }
 
-	static Texture2D CreateTexture(string name, vtfheader header, byte[] ImageData)
+	static Texture2D CreateTexture(string name, vtfheader header, byte[] ImageData, bool asNormalMap)
 	{
         bool isLinear = false;
         bool usesMipMaps = true;
 
 		Texture2D temp;
 
-        if ((header.flags & IMAGE_FLAG_NORMAL_MAP) != 0)
-        {
-            isLinear = true;
+        if (asNormalMap == true) {
+            if ((header.flags & IMAGE_FLAG_NORMAL_MAP) != 0)
+            {
+                isLinear = true;
+            }
+            else
+            {
+                return null;
+            }
         }
 
 		if (header.highResImageFormat == VTFImageFormat.IMAGE_FORMAT_DXT5) 
@@ -346,7 +352,14 @@ public class VTFLoader : MonoBehaviour
 			//if(remipmap)
 			//{
 				Color32[] tempCol = temp.GetPixels32();
-				temp = new Texture2D((int)header.width, (int)header.height, TextureFormat.RGBA32, usesMipMaps, isLinear);
+                if (asNormalMap)
+                {
+                    for (int i = 0; i < tempCol.Length; i++)
+                    {
+                        tempCol[i] = new Color32(tempCol[i].r, (byte)(0xff - tempCol[i].g), tempCol[i].b, tempCol[i].a);
+                    }
+                }
+                temp = new Texture2D((int)header.width, (int)header.height, TextureFormat.RGBA32, usesMipMaps, isLinear);
 				temp.SetPixels32(tempCol);
 				temp.Apply(true);
 				temp.Compress(true);
@@ -369,7 +382,14 @@ public class VTFLoader : MonoBehaviour
 			//if(remipmap)
 			//{
 				Color32[] tempCol = temp.GetPixels32();
-				temp = new Texture2D((int)header.width, (int)header.height, TextureFormat.RGBA32, usesMipMaps, isLinear);
+                if (asNormalMap)
+                {
+                    for (int i = 0; i < tempCol.Length; i++)
+                    {
+                        tempCol[i] = new Color32(tempCol[i].r, tempCol[i].g, tempCol[i].b, tempCol[i].a);
+                    }
+                }
+                temp = new Texture2D((int)header.width, (int)header.height, TextureFormat.RGBA32, usesMipMaps, isLinear);
 				temp.SetPixels32(tempCol);
 				temp.Apply(true);
 				temp.Compress(true);
@@ -378,37 +398,80 @@ public class VTFLoader : MonoBehaviour
 			//Debug.Log("Texture loaded "+header.width+"x"+header.height);
 			return temp;
 		}
-		if (header.highResImageFormat == VTFImageFormat.IMAGE_FORMAT_BGR888) 
+		if (header.highResImageFormat == VTFImageFormat.IMAGE_FORMAT_RGBA8888
+            || header.highResImageFormat == VTFImageFormat.IMAGE_FORMAT_ABGR8888
+            || header.highResImageFormat == VTFImageFormat.IMAGE_FORMAT_RGB888
+            || header.highResImageFormat == VTFImageFormat.IMAGE_FORMAT_BGR888
+            || header.highResImageFormat == VTFImageFormat.IMAGE_FORMAT_BGRA8888
+            || header.highResImageFormat == VTFImageFormat.IMAGE_FORMAT_ARGB8888) 
 		{
             int mipOffset = CalculateVTFMipOffset(header.width, header.height, header.mipmapCount);
+            int byteCount = 0;
+            byte[] pixelIndices = new byte[4];
+
+            switch(header.highResImageFormat)
+            {
+                case VTFImageFormat.IMAGE_FORMAT_RGBA8888:
+                    byteCount = 4;
+                    pixelIndices[0] = 0; pixelIndices[1] = 1; pixelIndices[2] = 2; pixelIndices[3] = 3;
+                    break;
+                case VTFImageFormat.IMAGE_FORMAT_ABGR8888:
+                    byteCount = 4;
+                    pixelIndices[0] = 3; pixelIndices[1] = 2; pixelIndices[2] = 1; pixelIndices[3] = 0;
+                    break;
+                case VTFImageFormat.IMAGE_FORMAT_RGB888:
+                    byteCount = 3;
+                    pixelIndices[0] = 0; pixelIndices[1] = 1; pixelIndices[2] = 2; pixelIndices[3] = 0xff;
+                    break;
+                case VTFImageFormat.IMAGE_FORMAT_BGR888:
+                    byteCount = 3;
+                    pixelIndices[0] = 2; pixelIndices[1] = 1; pixelIndices[2] = 0; pixelIndices[3] = 0xff;
+                    break;
+                case VTFImageFormat.IMAGE_FORMAT_BGRA8888:
+                    byteCount = 4;
+                    pixelIndices[0] = 2; pixelIndices[1] = 1; pixelIndices[2] = 0; pixelIndices[3] = 3;
+                    break;
+                case VTFImageFormat.IMAGE_FORMAT_ARGB8888:
+                    byteCount = 4;
+                    pixelIndices[0] = 1; pixelIndices[1] = 2; pixelIndices[2] = 3; pixelIndices[3] = 0;
+                    break;
+                default:
+                    return null;
+            }
 
 			temp = new Texture2D((int)header.width, (int)header.height, TextureFormat.RGB24,usesMipMaps,isLinear);
 			Color32[] colors = new Color32[header.width * header.height];
-			for(int i=0; i<header.width * header.height; i++)
-			{
-				colors[i] = new Color32(ImageData[(mipOffset*3)+(i*3)+2],ImageData[(mipOffset*3)+(i*3)+1],ImageData[(mipOffset*3)+i*3],255);
-			}
+            if (asNormalMap)
+            {
+                for (int i = 0; i < header.width * header.height; i++)
+                {
+                    colors[i] = new Color32(
+                        pixelIndices[0] != 255 ?
+                        ImageData[(mipOffset * byteCount) + (i * byteCount) + pixelIndices[0]] : (byte)0xff,
+                        pixelIndices[1] != 255 ?
+                        (byte)(0xff - ImageData[(mipOffset * byteCount) + (i * byteCount) + pixelIndices[1]]) : (byte)0xff,
+                        pixelIndices[2] != 255 ?
+                        ImageData[(mipOffset * byteCount) + (i * byteCount) + pixelIndices[2]] : (byte)0xff,
+                        pixelIndices[3] != 255 ?
+                        ImageData[(mipOffset * byteCount) + (i * byteCount) + pixelIndices[3]] : (byte)0xff);
+                    }
+            }
+            else
+            {
+                for (int i = 0; i < header.width * header.height; i++)
+                {
+                    colors[i] = new Color32(
+                        pixelIndices[0] != 255 ?
+                        ImageData[(mipOffset * byteCount) + (i * byteCount) + pixelIndices[0]] : (byte)0xff,
+                        pixelIndices[2] != 255 ?
+                        ImageData[(mipOffset * byteCount) + (i * byteCount) + pixelIndices[1]] : (byte)0xff,
+                        pixelIndices[2] != 255 ?
+                        ImageData[(mipOffset * byteCount) + (i * byteCount) + pixelIndices[2]] : (byte)0xff,
+                        pixelIndices[3] != 255 ?
+                        ImageData[(mipOffset * byteCount) + (i * byteCount) + pixelIndices[3]] : (byte)0xff);
+                }
+            }
 			temp.SetPixels32(colors);
-			temp.Apply ();
-			temp.name = name;
-			//Debug.Log("Texture loaded "+header.width+"x"+header.height);
-			return temp;
-		}
-		if (header.highResImageFormat == VTFImageFormat.IMAGE_FORMAT_BGRA8888) 
-		{
-			temp = new Texture2D((int)header.width, (int)header.height, TextureFormat.BGRA32,false, isLinear);
-			/*Color32[] colors = new Color32[header.width * header.height];
-			for(int i=0; i<header.width * header.height; i++)
-			{
-				colors[i] = new Color32(ImageData[i*3+2],ImageData[i*3+1],ImageData[i*3],ImageData[i*3+3]);
-			}
-			temp.SetPixels32(colors);*/
-			int imageSize=header.width*header.height*4;
-			//int offset = imageSize*header.frames;
-			Debug.Log("ImageData length "+ImageData.Length/*+" offset "+offset*/+" Image size "+imageSize+" frames "+header.frames);
-			byte[] buf = new byte[imageSize];
-			Buffer.BlockCopy (ImageData,ImageData.Length-imageSize,buf,0,imageSize);
-			temp.LoadRawTextureData(buf);
 			temp.Apply ();
 			temp.name = name;
 			//Debug.Log("Texture loaded "+header.width+"x"+header.height);
