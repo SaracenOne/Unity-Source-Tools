@@ -35,10 +35,12 @@ namespace uSrcTools
 		public const int LUMP_AREAPORTALS	= 21;	//Portals between areas
 		
 		
-		public const int LUMP_DISPINFO 		= 26; 	//Displacement surface array 
-		
-		
-		public const int LUMP_DISP_LIGHTMAP_ALPHAS = 32; 	//Displacement lightmap alphas (unused/empty since Source 2006) 
+		public const int LUMP_DISPINFO 		= 26;   //Displacement surface array 
+
+        public const int LUMP_VERTNORMALS = 30;
+        public const int LUMP_VERTNORMALINDICES = 31;
+
+        public const int LUMP_DISP_LIGHTMAP_ALPHAS = 32; 	//Displacement lightmap alphas (unused/empty since Source 2006) 
 		public const int LUMP_DISP_VERTS 	= 33;	//Vertices of displacement surface meshes 
 		public const int LUMP_DISP_LIGHTMAP_SAMPLE_POSITIONS = 34;	//Displacement lightmap sample positions 
 		public const int LUMP_GAME_LUMP 	= 35;	//Game-specific data lump 

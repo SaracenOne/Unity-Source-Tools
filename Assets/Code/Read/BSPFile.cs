@@ -34,9 +34,13 @@ namespace uSrcTools
 		//
 		//public byte[] dispAlphasLumps;
 		public bspDispVert[] dispVertsLump;
-		//
-		//
-		public int gameLumpCount;
+        //
+        //
+        public Vector3[] vertNormalsLump;
+        public ushort[] vertNormalIndicesLump;
+        //
+        //
+        public int gameLumpCount;
 		public bspgamelump[] gameLump;
 			public int staticPropDictCount;
 			public string[] staticPropDict;
@@ -52,7 +56,10 @@ namespace uSrcTools
 		public string texdataString;
 		public int[] texdataStringTableLump;
 
-		public bool staticPropsReaded=false;
+        // Normal index for eace face
+        public int[] faceNormalPointers;
+
+        public bool staticPropsReaded=false;
 		public bool hasLightmaps;
 		public bool onlyHDR=false;
 
@@ -111,7 +118,19 @@ namespace uSrcTools
 				dispVertsLump = ReadDispVerts ();
 				//
 			}
-			if (uSrcSettings.Inst.props) 
+
+            vertNormalsLump = ReadVertNormals();
+            vertNormalIndicesLump = ReadVertNormalsIndices();
+
+            int normalIndex = 0;
+            faceNormalPointers = new int[facesLump.Length];
+            for (int i = 0; i < facesLump.Length; i++)
+            {
+                faceNormalPointers[i] = normalIndex;
+                normalIndex += facesLump[i].numedges;
+            }
+
+            if (uSrcSettings.Inst.props) 
 			{
 				gameLump = ReadGameLump ();
 
@@ -435,8 +454,38 @@ namespace uSrcTools
 			Debug.Log ("Load: "+dispinfoCount+" DispInfos ");
 			return temp;
 		}
-		
-		DisplaceNeighbor[] ReadDispNeighbor(int count)
+
+        Vector3[] ReadVertNormals()
+        {
+            br.BaseStream.Seek(header.lumps[SourceBSPStructs.LUMP_VERTNORMALS].fileofs, SeekOrigin.Begin);
+            int vertNormalsCount = header.lumps[SourceBSPStructs.LUMP_VERTNORMALS].filelen / 12;
+            Vector3[] temp = new Vector3[vertNormalsCount];
+
+            for (int i = 0; i < vertNormalsCount; i++)
+            {
+                temp[i] = ConvertUtils.ReadVector3(br);
+            }
+            tempLog += ("Load: " + vertNormalsCount + " Normals \n");
+
+            return temp;
+        }
+
+        ushort[] ReadVertNormalsIndices()
+        {
+            br.BaseStream.Seek(header.lumps[SourceBSPStructs.LUMP_VERTNORMALINDICES].fileofs, SeekOrigin.Begin);
+            int vertNormalsIndicesCount = header.lumps[SourceBSPStructs.LUMP_VERTNORMALINDICES].filelen / 2;
+            ushort[] temp = new ushort[vertNormalsIndicesCount];
+
+            for (int i = 0; i < vertNormalsIndicesCount; i++)
+            {
+                temp[i] = br.ReadUInt16();
+            }
+            tempLog += ("Load: " + vertNormalsIndicesCount + " NormalIndices \n");
+
+            return temp;
+        }
+
+        DisplaceNeighbor[] ReadDispNeighbor(int count)
 		{
 			DisplaceNeighbor[] temp = new DisplaceNeighbor[count];
 
